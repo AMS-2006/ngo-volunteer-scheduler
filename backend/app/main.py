@@ -1,41 +1,53 @@
 """
-FastAPI application entry point.
+app/main.py  –  FastAPI application entry point
+─────────────────────────────────────────────────
+Registers all routers, middleware, startup hooks, and system endpoints.
 
-Startup checklist:
-  1. App is created with metadata.
-  2. CORS middleware is configured.
-  3. All API routes are mounted at /api/v1.
-  4. A health-check endpoint is available at /health.
-  5. Database tables are created automatically on startup (dev mode).
-     In production, use Alembic migrations instead.
+Module routing:
+  /api/v1/auth/          → routers/auth.py          (Auth)
+  /api/v1/ngo/           → routers/ngo.py           (Module 1 – NGO Profile)
+  /api/v1/events/        → routers/events.py        (Module 1 – Events)
+  /api/v1/events/*/shifts → routers/shifts.py       (Module 1 – Shifts)
+  /api/v1/volunteers/    → routers/volunteers.py    (Module 2 – Volunteer Mgmt)
+  /api/v1/registrations/ → routers/registrations.py (Module 3 – Scheduling)
+  /api/v1/reminders/     → routers/reminders.py     (Module 6 – Notifications)
 """
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.router import api_router
 from app.core.config import get_settings
-from app.core.database import Base, engine
+from app.database.connection import Base, engine
 
-# Import models so SQLAlchemy registers them before create_all
-import app.models  # noqa: F401
+# ── Import all models (registers tables with SQLAlchemy metadata) ─────────────
+import app.database.models  # noqa: F401
+
+# ── Import all routers ────────────────────────────────────────────────────────
+from app.routers import auth, events, ngo, registrations, reminders, shifts, volunteers
 
 settings = get_settings()
 
+# ── Create FastAPI app ────────────────────────────────────────────────────────
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     description=(
-        "REST API for the NGO Volunteer Scheduling and Coordination Platform. "
-        "Covers volunteer management, event/shift creation, conflict-free scheduling, "
-        "coverage analytics, smart matching, reminders, and attendance tracking."
+        "**NGO Volunteer Scheduling & Coordination Platform** — WEB-12\n\n"
+        "REST API covering:\n"
+        "- **Module 1**: NGO & Event Management\n"
+        "- **Module 2**: Volunteer Management\n"
+        "- **Module 3**: Conflict-Free Scheduling Engine *(coming soon)*\n"
+        "- **Module 4**: Smart Volunteer Matching *(coming soon)*\n"
+        "- **Module 5**: Coverage Dashboard *(coming soon)*\n"
+        "- **Module 6**: Reminders & Notifications *(coming soon)*\n"
+        "- **Module 7**: Attendance Tracking *(coming soon)*"
     ),
-    docs_url="/docs",       # Swagger UI
-    redoc_url="/redoc",     # ReDoc UI
+    docs_url="/docs",
+    redoc_url="/redoc",
     openapi_url="/openapi.json",
 )
 
-# ── CORS ──────────────────────────────────────────────────────────────────────
+# ── CORS Middleware ────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.origins_list,
@@ -44,16 +56,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── API Routes ────────────────────────────────────────────────────────────────
-app.include_router(api_router)
+# ── Register all routers under /api/v1 ───────────────────────────────────────
+PREFIX = "/api/v1"
 
+app.include_router(auth.router,          prefix=PREFIX)
+app.include_router(ngo.router,           prefix=PREFIX)
+app.include_router(events.router,        prefix=PREFIX)
+app.include_router(shifts.router,        prefix=PREFIX)   # nested under /events/{id}/shifts
+app.include_router(volunteers.router,    prefix=PREFIX)
+app.include_router(registrations.router, prefix=PREFIX)
+app.include_router(reminders.router,     prefix=PREFIX)
 
-# ── Startup Event ─────────────────────────────────────────────────────────────
+# ── Startup: auto-create tables (DEV only) ───────────────────────────────────
 @app.on_event("startup")
 def on_startup():
     """
-    Create all database tables if they don't exist.
-    DEV ONLY – remove this in production and rely solely on Alembic.
+    Create all database tables that don't exist yet.
+    DEV convenience only – production should use: alembic upgrade head
     """
     Base.metadata.create_all(bind=engine)
 
@@ -61,15 +80,19 @@ def on_startup():
 # ── Health Check ──────────────────────────────────────────────────────────────
 @app.get("/health", tags=["System"])
 def health_check():
-    """Simple health check endpoint for deployment monitors."""
-    return {"status": "ok", "app": settings.app_name, "version": settings.app_version}
+    """Health probe for deployment monitors (Render, Railway, etc.)."""
+    return {
+        "status": "ok",
+        "app": settings.app_name,
+        "version": settings.app_version,
+    }
 
 
-# ── Root ──────────────────────────────────────────────────────────────────────
 @app.get("/", tags=["System"])
 def root():
     return {
         "message": f"Welcome to {settings.app_name} API",
         "docs": "/docs",
         "health": "/health",
+        "version": settings.app_version,
     }

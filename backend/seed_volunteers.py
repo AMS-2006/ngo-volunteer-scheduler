@@ -15,12 +15,12 @@ import os
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from app.core.database import SessionLocal, Base, engine
+from app.database.connection import SessionLocal, Base, engine
 from app.core.security import hash_password
 from app.models.user import User
 from app.models.volunteer import VolunteerProfile
 
-import app.models  # noqa – ensure all models are registered
+import app.database.models  # noqa – ensure all models are registered
 
 # ── Create tables if they don't exist yet ─────────────────────────────────────
 Base.metadata.create_all(bind=engine)

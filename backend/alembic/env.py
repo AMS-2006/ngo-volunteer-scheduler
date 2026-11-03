@@ -20,8 +20,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 # ── Import app settings and ALL models ───────────────────────────────────────
 from app.core.config import get_settings  # noqa: E402
-from app.core.database import Base  # noqa: E402
-import app.models  # noqa: F401, E402  ← registers all tables with Base.metadata
+from app.database.connection import Base  # noqa: E402
+import app.database.models  # noqa: F401, E402  ← registers all tables with Base.metadata
 
 settings = get_settings()
 

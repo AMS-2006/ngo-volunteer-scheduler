@@ -1,7 +1,8 @@
 """
-User model – stores authentication credentials and role for every account.
+User model – authentication credentials and role for every account.
 A single User row is shared between Admin and Volunteer accounts.
-The role field ('admin' | 'volunteer') determines access level.
+role = 'admin'     → NGO coordinator (has one NGO profile)
+role = 'volunteer' → individual volunteer (has one VolunteerProfile)
 """
 
 import uuid
@@ -10,7 +11,7 @@ from datetime import datetime, timezone
 from sqlalchemy import Boolean, DateTime, Enum, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.database import Base
+from app.database.connection import Base
 
 
 class User(Base):
@@ -31,8 +32,6 @@ class User(Base):
     full_name: Mapped[str] = mapped_column(String(120), nullable=False)
 
     # ── Role ─────────────────────────────────────────────────────────────────
-    # 'admin'     → NGO coordinator / manager
-    # 'volunteer' → individual volunteer
     role: Mapped[str] = mapped_column(
         Enum("admin", "volunteer", name="user_role_enum"),
         nullable=False,
@@ -56,6 +55,16 @@ class User(Base):
     )
 
     # ── Relationships ─────────────────────────────────────────────────────────
+    # Admin → NGO (one-to-one)
+    ngo: Mapped["NGO"] = relationship(  # noqa: F821
+        "NGO",
+        back_populates="admin",
+        uselist=False,
+        cascade="all, delete-orphan",
+        foreign_keys="NGO.admin_user_id",
+    )
+
+    # Volunteer → Profile (one-to-one)
     volunteer_profile: Mapped["VolunteerProfile"] = relationship(  # noqa: F821
         "VolunteerProfile",
         back_populates="user",
