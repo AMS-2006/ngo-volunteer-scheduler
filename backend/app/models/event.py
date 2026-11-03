@@ -1,129 +1,52 @@
 """
-models/event.py
-───────────────
-Event model – a volunteering activity created by an NGO admin.
+Event model – a volunteering event (e.g. "Beach Clean-up Drive") that owns shifts.
 
-Each Event contains one or more Shifts (time slots).
-Features covered (Module 1):
-  • Title, description, location
-  • Event dates (start + end)
-  • Total volunteers required across all shifts
-  • Status lifecycle: DRAFT → PUBLISHED → COMPLETED / CANCELLED
+Module 1 (Admin & Event Management) will extend this table. Module 3 only needs
+the columns below so that shifts can be linked to an event and show its
+name / location / dates.
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
-from sqlalchemy import (
-    CheckConstraint,
-    DateTime,
-    Enum,
-    ForeignKey,
-    Integer,
-    String,
-    Text,
-)
+from sqlalchemy import CheckConstraint, Date, DateTime, Enum, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.database.connection import Base
+from app.core.database import Base
+
+
+class EventStatus:
+    PUBLISHED = "published"
+    CANCELLED = "cancelled"
 
 
 class Event(Base):
     __tablename__ = "events"
+    __table_args__ = (
+        CheckConstraint("end_date >= start_date", name="ck_event_dates"),
+    )
 
-    # ── Primary Key ──────────────────────────────────────────────────────────
     id: Mapped[str] = mapped_column(
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
 
-    # ── Ownership ────────────────────────────────────────────────────────────
-    ngo_id: Mapped[str] = mapped_column(
-        String(36),
-        ForeignKey("ngos.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-        comment="The NGO that owns this event",
-    )
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    location: Mapped[str] = mapped_column(String(300), nullable=False)
 
-    # Also track which admin user created it (for audit trail)
-    created_by: Mapped[str] = mapped_column(
-        String(36),
-        ForeignKey("users.id", ondelete="SET NULL"),
-        nullable=True,
-        comment="Admin user who created the event",
-    )
+    start_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    end_date: Mapped[date] = mapped_column(Date, nullable=False)
 
-    # ── Core Event Details ────────────────────────────────────────────────────
-    title: Mapped[str] = mapped_column(
-        String(200), nullable=False, index=True,
-        comment="Short descriptive title, e.g. 'Bengaluru Lake Cleanup'"
-    )
-    description: Mapped[str | None] = mapped_column(
-        Text, nullable=True,
-        comment="Full description of the event, goals, and what volunteers will do"
-    )
-
-    # ── Location ──────────────────────────────────────────────────────────────
-    location_name: Mapped[str | None] = mapped_column(
-        String(200), nullable=True,
-        comment="Venue name, e.g. 'Jakkur Lake'"
-    )
-    address: Mapped[str | None] = mapped_column(Text, nullable=True)
-    city: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
-    state: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    pincode: Mapped[str | None] = mapped_column(String(10), nullable=True)
-    # Google Maps / coordinates (optional, useful for distance-based matching)
-    latitude: Mapped[float | None] = mapped_column(nullable=True)
-    longitude: Mapped[float | None] = mapped_column(nullable=True)
-
-    # ── Dates ─────────────────────────────────────────────────────────────────
-    event_date: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, index=True,
-        comment="Primary date/start of the event"
-    )
-    event_end_date: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True,
-        comment="End date for multi-day events"
-    )
-
-    # ── Volunteer Requirements ─────────────────────────────────────────────────
-    total_volunteers_required: Mapped[int] = mapped_column(
-        Integer,
-        CheckConstraint("total_volunteers_required >= 1", name="ck_event_volunteers"),
-        nullable=False,
-        default=1,
-        comment="Total volunteers needed across all shifts",
-    )
-
-    # Skills/interests required for this event (comma-separated tags)
-    required_skills: Mapped[str | None] = mapped_column(
-        String(500), nullable=True,
-        comment="Comma-separated skill tags, e.g. 'First Aid, Driving'"
-    )
-    cause_category: Mapped[str | None] = mapped_column(
-        String(100), nullable=True, index=True,
-        comment="Event cause category, e.g. Environment, Healthcare"
-    )
-
-    # ── Status Lifecycle ──────────────────────────────────────────────────────
-    # DRAFT      → created but not visible to volunteers yet
-    # PUBLISHED  → visible on volunteer portal, registrations open
-    # COMPLETED  → event has occurred
-    # CANCELLED  → event was called off
     status: Mapped[str] = mapped_column(
-        Enum(
-            "draft",
-            "published",
-            "completed",
-            "cancelled",
-            name="event_status_enum",
-        ),
+        Enum("published", "cancelled", name="event_status_enum"),
         nullable=False,
-        default="draft",
-        index=True,
+        default=EventStatus.PUBLISHED,
     )
 
-    # ── Timestamps ────────────────────────────────────────────────────────────
+    created_by: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -136,15 +59,9 @@ class Event(Base):
         nullable=False,
     )
 
-    # ── Relationships ─────────────────────────────────────────────────────────
-    ngo: Mapped["NGO"] = relationship("NGO", back_populates="events")  # noqa: F821
-    creator: Mapped["User"] = relationship(  # noqa: F821
-        "User", foreign_keys=[created_by]
-    )
     shifts: Mapped[list["Shift"]] = relationship(  # noqa: F821
-        "Shift", back_populates="event", cascade="all, delete-orphan",
-        order_by="Shift.start_time"
+        "Shift", back_populates="event", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:
-        return f"<Event id={self.id} title='{self.title}' status={self.status}>"
+        return f"<Event id={self.id} name={self.name!r}>"

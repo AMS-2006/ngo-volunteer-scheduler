@@ -1,40 +1,53 @@
 """
-models/shift.py
-───────────────
-Shift model – a time-slot within an Event.
+Shift model – a time slot inside an event that volunteers sign up for.
 
-One Event → many Shifts.
-One Shift → many Registrations (via the Registration model).
+A shift is always a single-day interval [start_time, end_time) on `shift_date`
+(no overnight shifts), which keeps overlap detection and availability matching
+simple and exact.
 
-The Scheduling Engine (Module 3) uses start_time / end_time
-to detect overlapping assignments for a volunteer.
+`status` is a *derived-but-stored* field kept in sync by the capacity service:
+  open      – confirmed volunteers < capacity
+  full      – confirmed volunteers >= capacity
+  cancelled – shift withdrawn by an admin
+The live remaining-slot count is always computed from registrations.
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, time, timezone
 
 from sqlalchemy import (
     CheckConstraint,
+    Date,
     DateTime,
+    Enum,
     ForeignKey,
+    Index,
     Integer,
     String,
-    Text,
+    Time,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.database.connection import Base
+from app.core.database import Base
+
+
+class ShiftStatus:
+    OPEN = "open"
+    FULL = "full"
+    CANCELLED = "cancelled"
 
 
 class Shift(Base):
     __tablename__ = "shifts"
+    __table_args__ = (
+        CheckConstraint("end_time > start_time", name="ck_shift_time_order"),
+        CheckConstraint("capacity >= 1", name="ck_shift_capacity"),
+        Index("ix_shifts_date_time", "shift_date", "start_time", "end_time"),
+    )
 
-    # ── Primary Key ──────────────────────────────────────────────────────────
     id: Mapped[str] = mapped_column(
         String(36), primary_key=True, default=lambda: str(uuid.uuid4())
     )
-
-    # ── Parent Event ──────────────────────────────────────────────────────────
     event_id: Mapped[str] = mapped_column(
         String(36),
         ForeignKey("events.id", ondelete="CASCADE"),
@@ -42,43 +55,19 @@ class Shift(Base):
         index=True,
     )
 
-    # ── Shift Identity ────────────────────────────────────────────────────────
-    name: Mapped[str] = mapped_column(
-        String(100), nullable=False,
-        comment="Human-readable label, e.g. 'Morning', 'Afternoon', 'Setup Crew'"
-    )
-    description: Mapped[str | None] = mapped_column(
-        Text, nullable=True,
-        comment="What volunteers will specifically do during this shift"
-    )
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    shift_date: Mapped[date] = mapped_column(Date, nullable=False)
+    start_time: Mapped[time] = mapped_column(Time, nullable=False)
+    end_time: Mapped[time] = mapped_column(Time, nullable=False)
 
-    # ── Timing ────────────────────────────────────────────────────────────────
-    # These two fields are the key inputs to the conflict-detection algorithm.
-    start_time: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, index=True,
-        comment="Shift start datetime (UTC)"
-    )
-    end_time: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False,
-        comment="Shift end datetime (UTC)"
-    )
+    capacity: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    # ── Capacity ──────────────────────────────────────────────────────────────
-    required_volunteers: Mapped[int] = mapped_column(
-        Integer,
-        CheckConstraint("required_volunteers >= 1", name="ck_shift_volunteers"),
+    status: Mapped[str] = mapped_column(
+        Enum("open", "full", "cancelled", name="shift_status_enum"),
         nullable=False,
-        default=1,
-        comment="Number of volunteers needed for this specific shift",
+        default=ShiftStatus.OPEN,
     )
 
-    # Skills specifically needed for this shift (may differ from parent event)
-    required_skills: Mapped[str | None] = mapped_column(
-        String(500), nullable=True,
-        comment="Comma-separated skill tags specific to this shift"
-    )
-
-    # ── Timestamps ────────────────────────────────────────────────────────────
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -91,32 +80,12 @@ class Shift(Base):
         nullable=False,
     )
 
-    # ── Relationships ─────────────────────────────────────────────────────────
+    # NOTE: intentionally lazy-loaded. `SELECT ... FOR UPDATE` on a shift must not
+    # carry an outer join (PostgreSQL rejects locking the nullable side).
     event: Mapped["Event"] = relationship("Event", back_populates="shifts")  # noqa: F821
     registrations: Mapped[list["Registration"]] = relationship(  # noqa: F821
         "Registration", back_populates="shift", cascade="all, delete-orphan"
     )
 
-    # ── Derived helpers (not stored, computed on access) ─────────────────────
-    @property
-    def confirmed_count(self) -> int:
-        """Number of confirmed registrations for this shift."""
-        return sum(1 for r in self.registrations if r.status == "confirmed")
-
-    @property
-    def waitlist_count(self) -> int:
-        return sum(1 for r in self.registrations if r.status == "waitlisted")
-
-    @property
-    def slots_remaining(self) -> int:
-        return max(0, self.required_volunteers - self.confirmed_count)
-
-    @property
-    def is_full(self) -> bool:
-        return self.confirmed_count >= self.required_volunteers
-
     def __repr__(self) -> str:
-        return (
-            f"<Shift id={self.id} name='{self.name}' "
-            f"{self.start_time.strftime('%H:%M')}–{self.end_time.strftime('%H:%M')}>"
-        )
+        return f"<Shift id={self.id} {self.shift_date} {self.start_time}-{self.end_time}>"
