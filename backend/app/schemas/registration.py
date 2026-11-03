@@ -5,13 +5,15 @@ Pydantic schemas for Module 3: Smart Shift Scheduling Engine.
 Covers:
   • Shift registration requests & responses
   • Availability configuration schemas
-  • Waitlist status and remaining slot representations
+  • Waitlist status, remaining slots, and administrative rosters
 """
 
 from datetime import date, datetime, time
 from typing import Optional
 
 from pydantic import BaseModel, Field, model_validator
+
+from app.schemas.shift import ShiftOut
 
 
 # ── Availability Schemas ──────────────────────────────────────────────────────
@@ -42,8 +44,8 @@ class AvailabilityOut(BaseModel):
     day_of_week: Optional[int]
     start_time: time
     end_time: time
-    specific_date: Optional[date]
-    is_recurring: bool
+    specific_date: Optional[date] = None
+    is_recurring: bool = True
     created_at: datetime
     updated_at: datetime
 
@@ -64,16 +66,22 @@ class RegistrationCancel(BaseModel):
 
 class ShiftBrief(BaseModel):
     """Brief shift details embedded in registration outputs."""
-    id: str
-    event_id: str
-    name: str
-    start_time: datetime
-    end_time: datetime
-    required_volunteers: int
-    required_skills: Optional[str] = None
+    id: Optional[str] = None
+    shift_id: Optional[str] = None
+    event_id: Optional[str] = None
+    event_name: Optional[str] = None
     event_title: Optional[str] = None
     location_name: Optional[str] = None
+    event_location: Optional[str] = None
     city: Optional[str] = None
+    name: Optional[str] = None
+    title: Optional[str] = None
+    shift_date: Optional[date] = None
+    start_time: Optional[time | datetime] = None
+    end_time: Optional[time | datetime] = None
+    required_volunteers: Optional[int] = None
+    required_skills: Optional[str] = None
+    shift_status: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -86,12 +94,41 @@ class RegistrationOut(BaseModel):
     status: str  # 'confirmed' | 'waitlisted' | 'cancelled'
     waitlist_position: Optional[int] = None
     cancellation_reason: Optional[str] = None
-    registered_at: datetime
-    updated_at: datetime
+    registered_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+    confirmed_at: Optional[datetime] = None
+    cancelled_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     shift: Optional[ShiftBrief] = None
     message: Optional[str] = None
 
     model_config = {"from_attributes": True}
+
+
+class RegistrationDetailOut(RegistrationOut):
+    shift: ShiftBrief
+
+
+class CancelResponse(BaseModel):
+    message: str
+    registration: RegistrationOut
+    waitlist_promoted: bool = False
+
+
+class RosterEntryOut(BaseModel):
+    registration_id: str
+    volunteer_id: str
+    full_name: str
+    email: str
+    status: str
+    waitlist_position: Optional[int] = None
+    created_at: datetime
+    confirmed_at: Optional[datetime] = None
+
+
+class WaitlistProcessResponse(BaseModel):
+    promoted_count: int
+    shift: ShiftOut
 
 
 class ShiftWithAvailability(BaseModel):
