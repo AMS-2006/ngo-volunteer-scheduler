@@ -1,145 +1,74 @@
 """
-routers/shifts.py  –  Module 1 (Shift management under events)
-───────────────────────────────────────────────────────────────
-Endpoints:
-  POST   /api/v1/events/{event_id}/shifts/         – Add shift to event (admin)
-  GET    /api/v1/events/{event_id}/shifts/         – List all shifts for event
-  GET    /api/v1/events/{event_id}/shifts/{id}     – Get single shift detail
-  PATCH  /api/v1/events/{event_id}/shifts/{id}     – Update shift (admin)
-  DELETE /api/v1/events/{event_id}/shifts/{id}     – Delete shift (admin)
+routers/shifts.py  –  Module 1 shift management, backed by the Module 3 shift service
+───────────────────────────────────────────────────────────────────────────────────────
+  POST /api/v1/events/{event_id}/shifts/                    – Add a shift (admin, owner)
+  GET  /api/v1/events/{event_id}/shifts/                    – List shifts with live capacity
+  GET  /api/v1/events/{event_id}/shifts/{shift_id}          – One shift
+  PATCH /api/v1/events/{event_id}/shifts/{shift_id}         – Update (admin, owner)
+  POST /api/v1/events/{event_id}/shifts/{shift_id}/cancel   – Cancel shift + its registrations (admin, owner)
+
+The request body of POST must carry `event_id` equal to the path's event_id.
+Capacity, waitlist and conflict rules live in services/shift_service.py (Module 3).
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session, selectinload
+from fastapi import APIRouter, Depends, status
+from sqlalchemy.orm import Session
 
+from app.core.deps import get_current_user, require_admin
 from app.database.connection import get_db
-from app.core.deps import require_admin
-from app.models.event import Event
-from app.models.ngo import NGO
 from app.models.shift import Shift
 from app.models.user import User
 from app.schemas.shift import ShiftCreate, ShiftOut, ShiftUpdate
+from app.services import recommendation_service as ownership
+from app.services import shift_service
+from app.services.errors import NotFoundError, ValidationFailed
 
 router = APIRouter(tags=["Shift Management"])
 
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
-def _get_event_or_404(event_id: str, db: Session) -> Event:
-    event = db.query(Event).options(selectinload(Event.shifts)).filter(Event.id == event_id).first()
-    if not event:
-        raise HTTPException(status_code=404, detail="Event not found.")
-    return event
-
-
-def _get_shift_or_404(shift_id: str, event_id: str, db: Session) -> Shift:
-    shift = (
-        db.query(Shift)
-        .options(selectinload(Shift.registrations))
-        .filter(Shift.id == shift_id, Shift.event_id == event_id)
-        .first()
-    )
-    if not shift:
-        raise HTTPException(status_code=404, detail="Shift not found.")
+def _shift_of_event(db: Session, event_id: str, shift_id: str) -> Shift:
+    shift = db.get(Shift, shift_id)
+    if shift is None or shift.event_id != event_id:
+        raise NotFoundError("Shift not found.")
     return shift
 
-
-def _assert_admin_owns_event(admin: User, event: Event, db: Session):
-    ngo = db.query(NGO).filter(NGO.admin_user_id == admin.id).first()
-    if not ngo or event.ngo_id != ngo.id:
-        raise HTTPException(status_code=403, detail="You can only manage shifts for your own NGO's events.")
-
-
-def _shift_to_out(shift: Shift) -> ShiftOut:
-    return ShiftOut(
-        id=shift.id,
-        event_id=shift.event_id,
-        name=shift.name,
-        description=shift.description,
-        start_time=shift.start_time,
-        end_time=shift.end_time,
-        required_volunteers=shift.required_volunteers,
-        required_skills=shift.required_skills,
-        confirmed_count=shift.confirmed_count,
-        waitlist_count=shift.waitlist_count,
-        slots_remaining=shift.slots_remaining,
-        is_full=shift.is_full,
-        created_at=shift.created_at,
-        updated_at=shift.updated_at,
-    )
-
-
-# ── Routes ────────────────────────────────────────────────────────────────────
 
 @router.post(
     "/events/{event_id}/shifts/",
     response_model=ShiftOut,
     status_code=status.HTTP_201_CREATED,
-    summary="Add a shift to an event (admin only)",
+    summary="Add a shift to an event (admin, owner)",
 )
 def create_shift(
-    event_id: str,
-    payload: ShiftCreate,
-    admin: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    event_id: str, payload: ShiftCreate, admin: User = Depends(require_admin), db: Session = Depends(get_db)
 ):
-    """
-    Create a new time-slot (shift) under an event.
-    - The event must belong to the authenticated admin's NGO.
-    - start_time must be before end_time.
-    """
-    event = _get_event_or_404(event_id, db)
-    _assert_admin_owns_event(admin, event, db)
-
-    shift = Shift(event_id=event_id, **payload.model_dump())
-    db.add(shift)
-    db.commit()
-    db.refresh(shift)
-
-    # Reload with registrations to compute derived fields
-    shift = _get_shift_or_404(shift.id, event_id, db)
-    return _shift_to_out(shift)
+    ownership.get_owned_event(db, admin, event_id)
+    if payload.event_id != event_id:
+        raise ValidationFailed("event_id in the body must match the event_id in the URL.")
+    return shift_service.create_shift(db, payload, admin)
 
 
-@router.get(
-    "/events/{event_id}/shifts/",
-    response_model=list[ShiftOut],
-    summary="List all shifts for an event",
-)
+@router.get("/events/{event_id}/shifts/", response_model=list[ShiftOut], summary="List shifts of an event")
 def list_shifts(
     event_id: str,
+    include_past: bool = True,
+    include_cancelled: bool = False,
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Returns all shifts for an event, ordered by start time. Public access."""
-    _get_event_or_404(event_id, db)  # Verify event exists
-    shifts = (
-        db.query(Shift)
-        .options(selectinload(Shift.registrations))
-        .filter(Shift.event_id == event_id)
-        .order_by(Shift.start_time)
-        .all()
+    shift_service.get_event(db, event_id)  # 404 if missing
+    return shift_service.list_shifts(
+        db, user, event_id=event_id, include_past=include_past, include_cancelled=include_cancelled, limit=500
     )
-    return [_shift_to_out(s) for s in shifts]
 
 
-@router.get(
-    "/events/{event_id}/shifts/{shift_id}",
-    response_model=ShiftOut,
-    summary="Get shift details with coverage data",
-)
-def get_shift(
-    event_id: str,
-    shift_id: str,
-    db: Session = Depends(get_db),
-):
-    shift = _get_shift_or_404(shift_id, event_id, db)
-    return _shift_to_out(shift)
+@router.get("/events/{event_id}/shifts/{shift_id}", response_model=ShiftOut, summary="Get one shift")
+def get_shift(event_id: str, shift_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    _shift_of_event(db, event_id, shift_id)
+    return shift_service.get_shift(db, user, shift_id)
 
 
-@router.patch(
-    "/events/{event_id}/shifts/{shift_id}",
-    response_model=ShiftOut,
-    summary="Update a shift (admin only)",
-)
+@router.patch("/events/{event_id}/shifts/{shift_id}", response_model=ShiftOut, summary="Update a shift (admin, owner)")
 def update_shift(
     event_id: str,
     shift_id: str,
@@ -147,39 +76,19 @@ def update_shift(
     admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    event = _get_event_or_404(event_id, db)
-    _assert_admin_owns_event(admin, event, db)
-    shift = _get_shift_or_404(shift_id, event_id, db)
-
-    update_data = payload.model_dump(exclude_unset=True)
-    # Validate times if either is being updated
-    start = update_data.get("start_time", shift.start_time)
-    end = update_data.get("end_time", shift.end_time)
-    if end <= start:
-        raise HTTPException(status_code=400, detail="end_time must be after start_time.")
-
-    for field, value in update_data.items():
-        setattr(shift, field, value)
-
-    db.commit()
-    shift = _get_shift_or_404(shift_id, event_id, db)
-    return _shift_to_out(shift)
+    ownership.get_owned_event(db, admin, event_id)
+    _shift_of_event(db, event_id, shift_id)
+    return shift_service.update_shift(db, shift_id, payload, admin)
 
 
-@router.delete(
-    "/events/{event_id}/shifts/{shift_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete a shift (admin only)",
+@router.post(
+    "/events/{event_id}/shifts/{shift_id}/cancel",
+    response_model=ShiftOut,
+    summary="Cancel a shift and all its registrations (admin, owner)",
 )
-def delete_shift(
-    event_id: str,
-    shift_id: str,
-    admin: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+def cancel_shift(
+    event_id: str, shift_id: str, admin: User = Depends(require_admin), db: Session = Depends(get_db)
 ):
-    event = _get_event_or_404(event_id, db)
-    _assert_admin_owns_event(admin, event, db)
-    shift = _get_shift_or_404(shift_id, event_id, db)
-
-    db.delete(shift)
-    db.commit()
+    ownership.get_owned_event(db, admin, event_id)
+    _shift_of_event(db, event_id, shift_id)
+    return shift_service.cancel_shift(db, shift_id, admin)

@@ -11,6 +11,18 @@ from app.models.shift import Shift  # noqa: F401
 from app.models.registration import Registration  # noqa: F401
 from app.models.availability import VolunteerAvailability  # noqa: F401
 
+# Module 4 – Matching & invitations
+from app.models.matching import (  # noqa: F401
+    EventMatchingProfile,
+    ShiftRequirement,
+    VolunteerInvitation,
+    VolunteerShortlist,
+)
+
+# Future modules – uncomment as you build them:
+# from app.models.notification import Notification # noqa: F401 – Module 6
+# from app.models.attendance import Attendance     # noqa: F401 – Module 7
+
 __all__ = [
     "User",
     "NGO",
@@ -19,4 +31,8 @@ __all__ = [
     "Shift",
     "Registration",
     "VolunteerAvailability",
+    "ShiftRequirement",
+    "EventMatchingProfile",
+    "VolunteerShortlist",
+    "VolunteerInvitation",
 ]

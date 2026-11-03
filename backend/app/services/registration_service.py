@@ -99,7 +99,7 @@ def _duplicate_race_error() -> AlreadyRegisteredError:
 
 # ── Commands ──────────────────────────────────────────────────────────────────
 
-def register(db: Session, volunteer_id: str, shift_id: str) -> RegistrationOut:
+def register(db: Session, volunteer_id: str, shift_id: str, on_confirm=None) -> RegistrationOut:
     """Confirm a volunteer on a shift with a free slot."""
 
     def operation() -> Registration:
@@ -128,6 +128,11 @@ def register(db: Session, volunteer_id: str, shift_id: str) -> RegistrationOut:
             confirmed_at=utcnow(),
         )
         db.add(registration)
+        if on_confirm is not None:
+            # Runs inside this transaction (shift + volunteer locks held). Raising aborts the
+            # whole registration. Used by Module 4 to mark an invitation ACCEPTED atomically.
+            db.flush()
+            on_confirm(db, registration)
         db.flush()
         capacity_service.sync_shift_status(db, shift)
         return registration

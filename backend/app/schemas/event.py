@@ -132,3 +132,11 @@ class EventSummary(BaseModel):
     shift_count: int = 0
 
     model_config = {"from_attributes": True}
+
+
+class EventUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=2, max_length=200)
+    description: Optional[str] = Field(None, max_length=2000)
+    location: Optional[str] = Field(None, min_length=2, max_length=300)
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None

@@ -23,7 +23,10 @@ from app.database.connection import Base, engine
 import app.database.models  # noqa: F401
 
 # ── Import all routers ────────────────────────────────────────────────────────
-from app.routers import auth, events, ngo, registrations, reminders, shifts, volunteers
+from app.routers import auth, events, matching, ngo, registrations, reminders, shifts, volunteers
+from app.services import expiry_worker
+from app.services.errors import SchedulingError
+from fastapi.responses import JSONResponse
 
 settings = get_settings()
 
@@ -66,6 +69,18 @@ app.include_router(shifts.router,        prefix=PREFIX)   # nested under /events
 app.include_router(volunteers.router,    prefix=PREFIX)
 app.include_router(registrations.router, prefix=PREFIX)
 app.include_router(reminders.router,     prefix=PREFIX)
+
+# ── Module 4 router + domain-error handler ───────────────────────────────────
+app.include_router(matching.router,      prefix=PREFIX)   # Module 4 – matching & invitations
+app.add_event_handler("startup", expiry_worker.start)
+app.add_event_handler("shutdown", expiry_worker.stop)
+
+
+@app.exception_handler(SchedulingError)
+async def scheduling_error_handler(_request, exc: SchedulingError):
+    """Domain errors from the scheduling / matching services -> JSON {detail, code, context}."""
+    return JSONResponse(status_code=exc.status_code, content=exc.to_dict())
+
 
 # ── Startup: auto-create tables (DEV only) ───────────────────────────────────
 @app.on_event("startup")
