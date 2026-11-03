@@ -26,6 +26,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database.connection import Base
 
 
+class ShiftStatus:
+    OPEN = "open"
+    FULL = "full"
+    CANCELLED = "cancelled"
+    ALL = (OPEN, FULL, CANCELLED)
+
+
 class Shift(Base):
     __tablename__ = "shifts"
 
@@ -78,6 +85,13 @@ class Shift(Base):
         comment="Comma-separated skill tags specific to this shift"
     )
 
+    # ── Status ────────────────────────────────────────────────────────────────
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default=ShiftStatus.OPEN,
+    )
+
     # ── Timestamps ────────────────────────────────────────────────────────────
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -114,6 +128,26 @@ class Shift(Base):
     @property
     def is_full(self) -> bool:
         return self.confirmed_count >= self.required_volunteers
+
+    @property
+    def capacity(self) -> int:
+        return self.required_volunteers
+
+    @capacity.setter
+    def capacity(self, val: int):
+        self.required_volunteers = val
+
+    @property
+    def title(self) -> str:
+        return self.name
+
+    @title.setter
+    def title(self, val: str):
+        self.name = val
+
+    @property
+    def shift_date(self):
+        return self.start_time.date()
 
     def __repr__(self) -> str:
         return (

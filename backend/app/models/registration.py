@@ -25,6 +25,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database.connection import Base
 
 
+class RegistrationStatus:
+    CONFIRMED = "confirmed"
+    WAITLISTED = "waitlisted"
+    CANCELLED = "cancelled"
+    ACTIVE = (CONFIRMED, WAITLISTED)
+
+
 class Registration(Base):
     __tablename__ = "registrations"
 

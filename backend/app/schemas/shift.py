@@ -10,6 +10,12 @@ from typing import Optional
 from pydantic import BaseModel, Field, model_validator
 
 
+class MyRegistrationInfo(BaseModel):
+    registration_id: str
+    status: str
+    waitlist_position: Optional[int] = None
+
+
 # ── CREATE ────────────────────────────────────────────────────────────────────
 class ShiftCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100,

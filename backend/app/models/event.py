@@ -28,6 +28,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database.connection import Base
 
 
+class EventStatus:
+    DRAFT = "draft"
+    PUBLISHED = "published"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+
+
 class Event(Base):
     __tablename__ = "events"
 
@@ -145,6 +152,26 @@ class Event(Base):
         "Shift", back_populates="event", cascade="all, delete-orphan",
         order_by="Shift.start_time"
     )
+
+    @property
+    def name(self) -> str:
+        return self.title
+
+    @name.setter
+    def name(self, val: str):
+        self.title = val
+
+    @property
+    def location(self) -> str:
+        return self.location_name or self.city or ""
+
+    @property
+    def start_date(self):
+        return self.event_date.date()
+
+    @property
+    def end_date(self):
+        return (self.event_end_date or self.event_date).date()
 
     def __repr__(self) -> str:
         return f"<Event id={self.id} title='{self.title}' status={self.status}>"

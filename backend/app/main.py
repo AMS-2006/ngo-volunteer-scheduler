@@ -23,7 +23,17 @@ from app.database.connection import Base, engine
 import app.database.models  # noqa: F401
 
 # ── Import all routers ────────────────────────────────────────────────────────
-from app.routers import auth, events, matching, ngo, registrations, reminders, shifts, volunteers
+from app.routers import (
+    attendance,
+    auth,
+    events,
+    matching,
+    ngo,
+    registrations,
+    reminders,
+    shifts,
+    volunteers,
+)
 from app.services import expiry_worker
 from app.services.errors import SchedulingError
 from fastapi.responses import JSONResponse
@@ -43,7 +53,7 @@ app = FastAPI(
         "- **Module 4**: Smart Volunteer Matching *(coming soon)*\n"
         "- **Module 5**: Coverage Dashboard *(coming soon)*\n"
         "- **Module 6**: Reminders & Notifications *(coming soon)*\n"
-        "- **Module 7**: Attendance Tracking *(coming soon)*"
+        "- **Module 7**: Attendance Tracking & Volunteer History"
     ),
     docs_url="/docs",
     redoc_url="/redoc",
@@ -69,6 +79,7 @@ app.include_router(shifts.router,        prefix=PREFIX)   # nested under /events
 app.include_router(volunteers.router,    prefix=PREFIX)
 app.include_router(registrations.router, prefix=PREFIX)
 app.include_router(reminders.router,     prefix=PREFIX)
+app.include_router(attendance.router,    prefix=PREFIX)
 
 # ── Module 4 router + domain-error handler ───────────────────────────────────
 app.include_router(matching.router,      prefix=PREFIX)   # Module 4 – matching & invitations

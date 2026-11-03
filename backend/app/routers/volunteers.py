@@ -17,14 +17,26 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
-from app.core.deps import get_current_user, require_admin
+from app.core.deps import get_current_user, require_admin, require_volunteer
 from app.models.user import User
 from app.models.volunteer import VolunteerProfile
+from app.schemas.attendance import (
+    AttendanceRecordOut,
+    VolunteerHistoryItem,
+    VolunteerHoursSummary,
+    VolunteerReliabilityStats,
+)
 from app.schemas.volunteer import (
     VolunteerProfileCreate,
     VolunteerProfileOut,
     VolunteerProfileUpdate,
     VolunteerSummary,
+)
+from app.services.volunteer_history_service import (
+    get_volunteer_attendance_records,
+    get_volunteer_history,
+    get_volunteer_hours_summary,
+    get_volunteer_reliability_stats,
 )
 
 router = APIRouter(prefix="/volunteers", tags=["Volunteer Management"])
@@ -102,6 +114,60 @@ def delete_my_profile(
     profile = _get_profile_or_404(current_user.id, db)
     db.delete(profile)
     db.commit()
+
+
+# ── Volunteer: participation history & attendance (Module 7) ─────────────────
+
+@router.get(
+    "/me/history",
+    response_model=list[VolunteerHistoryItem],
+    summary="View my participation timeline and attended shifts",
+)
+def get_my_history(
+    current_user: User = Depends(require_volunteer),
+    db: Session = Depends(get_db),
+):
+    """Retrieve full chronological participation history for the authenticated volunteer."""
+    return get_volunteer_history(current_user.id, db)
+
+
+@router.get(
+    "/me/attendance",
+    response_model=list[AttendanceRecordOut],
+    summary="View my attendance records",
+)
+def get_my_attendance(
+    current_user: User = Depends(require_volunteer),
+    db: Session = Depends(get_db),
+):
+    """Retrieve raw attendance records for the authenticated volunteer."""
+    return get_volunteer_attendance_records(current_user.id, db)
+
+
+@router.get(
+    "/me/hours",
+    response_model=VolunteerHoursSummary,
+    summary="View my verified volunteering hours breakdown",
+)
+def get_my_hours(
+    current_user: User = Depends(require_volunteer),
+    db: Session = Depends(get_db),
+):
+    """Return total credited hours, categorized by cause and grouped by month."""
+    return get_volunteer_hours_summary(current_user.id, db)
+
+
+@router.get(
+    "/me/statistics",
+    response_model=VolunteerReliabilityStats,
+    summary="View my participation and reliability statistics",
+)
+def get_my_statistics(
+    current_user: User = Depends(require_volunteer),
+    db: Session = Depends(get_db),
+):
+    """Return attendance percentage, total completed shifts, and absence stats."""
+    return get_volunteer_reliability_stats(current_user.id, db)
 
 
 # ── Admin: volunteer management ───────────────────────────────────────────────

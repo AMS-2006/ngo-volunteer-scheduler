@@ -19,9 +19,8 @@ from app.models.matching import (  # noqa: F401
     VolunteerShortlist,
 )
 
-# Future modules – uncomment as you build them:
-# from app.models.notification import Notification # noqa: F401 – Module 6
-# from app.models.attendance import Attendance     # noqa: F401 – Module 7
+# Module 7 – Attendance & volunteer history
+from app.models.attendance import Attendance  # noqa: F401
 
 __all__ = [
     "User",
@@ -35,4 +34,5 @@ __all__ = [
     "EventMatchingProfile",
     "VolunteerShortlist",
     "VolunteerInvitation",
+    "Attendance",
 ]
