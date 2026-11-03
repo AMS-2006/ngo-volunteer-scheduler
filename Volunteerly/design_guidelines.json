@@ -1,0 +1,215 @@
+{
+  "theme": "light",
+  "archetype": "ORGANIC_TRUST_SAAS",
+  "app_concept": "Volunteer Connect — Dual-sided NGO and Volunteer coordination platform with LinkedIn-inspired networking, shift scheduling, coverage tracking, and Smart Cancellation Manager ranking replacements.",
+  "colors": {
+    "surfaces": [
+      {
+        "name": "page",
+        "kind": "solid",
+        "bg": "#F8FAFC",
+        "on_bg": "#0F172A",
+        "on_bg_muted": "#475569"
+      },
+      {
+        "name": "panel",
+        "kind": "solid",
+        "bg": "#FFFFFF",
+        "on_bg": "#0F172A",
+        "on_bg_muted": "#64748B",
+        "roles": {
+          "link": "#0284C7",
+          "error": "#DC2626",
+          "success": "#16A34A",
+          "warning": "#D97706"
+        }
+      },
+      {
+        "name": "sidebar",
+        "kind": "solid",
+        "bg": "#0F172A",
+        "on_bg": "#F8FAFC",
+        "on_bg_muted": "#94A3B8",
+        "roles": {
+          "active_item": "#38BDF8",
+          "hover_item": "#E2E8F0"
+        }
+      },
+      {
+        "name": "hero",
+        "kind": "gradient",
+        "contrast_against": "#0F172A",
+        "guarantee": "scrim: linear-gradient(135deg, rgba(15,23,42,0.92) 0%, rgba(30,41,59,0.88) 100%)",
+        "on_bg": "#FFFFFF",
+        "on_bg_muted": "#E2E8F0",
+        "roles": {
+          "link": "#38BDF8",
+          "accent_pill": "#10B981"
+        }
+      },
+      {
+        "name": "card_urgent",
+        "kind": "solid",
+        "bg": "#FEF2F2",
+        "on_bg": "#991B1B",
+        "on_bg_muted": "#B91C1C"
+      },
+      {
+        "name": "card_success",
+        "kind": "solid",
+        "bg": "#F0FDF4",
+        "on_bg": "#166534",
+        "on_bg_muted": "#15803D"
+      },
+      {
+        "name": "card_warning",
+        "kind": "solid",
+        "bg": "#FFFBEB",
+        "on_bg": "#92400E",
+        "on_bg_muted": "#B45309"
+      }
+    ],
+    "brand": {
+      "primary": "#0284C7",
+      "primary_hover": "#0369A1",
+      "primary_light": "#E0F2FE",
+      "secondary": "#0D9488",
+      "secondary_hover": "#0F766E",
+      "accent_green": "#16A34A",
+      "accent_emerald": "#059669"
+    },
+    "accent": "#0284C7",
+    "on_accent": "#FFFFFF",
+    "status_badges": {
+      "fully_staffed": {
+        "bg": "#DCFCE7",
+        "text": "#166534",
+        "border": "#86EFAC",
+        "label": "Fully Staffed"
+      },
+      "partially_staffed": {
+        "bg": "#FEF3C7",
+        "text": "#92400E",
+        "border": "#FDE68A",
+        "label": "Partially Staffed"
+      },
+      "critical_shortage": {
+        "bg": "#FEE2E2",
+        "text": "#991B1B",
+        "border": "#FCA5A5",
+        "label": "Critical Shortage"
+      },
+      "fully_booked": {
+        "bg": "#E0E7FF",
+        "text": "#3730A3",
+        "border": "#C7D2FE",
+        "label": "Fully Booked"
+      },
+      "emergency_mode": {
+        "bg": "#FFE4E6",
+        "text": "#9F1239",
+        "border": "#FDA4AF",
+        "label": "Emergency Priority"
+      }
+    }
+  },
+  "typography": {
+    "font_heading": "'Plus Jakarta Sans Variable', sans-serif",
+    "font_body": "'Plus Jakarta Sans Variable', 'Noto Sans', sans-serif",
+    "font_mono": "'JetBrains Mono Variable', monospace",
+    "scale_px": {
+      "display": 52,
+      "h1": 38,
+      "h2": 28,
+      "h3": 20,
+      "h4": 18,
+      "body": 16,
+      "caption": 14,
+      "tiny": 12
+    },
+    "rules": {
+      "indic_fallback": "Ensure Indic scripts (Kannada, Hindi, Tamil, Telugu) render gracefully with system fallbacks ('Noto Sans', 'Segoe UI', system-ui).",
+      "heading_tracking": "tracking-tight",
+      "label_tracking": "tracking-wide text-xs uppercase font-semibold text-slate-500"
+    }
+  },
+  "entry_surfaces": {
+    "/": "split hero — brand value + dual CTA left, live volunteer network stats & urgent needs cards right",
+    "/login": "branded split auth — trust metrics & impact counter left, login form with role switch right",
+    "/register": "branded multi-step signup — role selection (NGO vs Volunteer) left panel, registration fields right"
+  },
+  "layouts": {
+    "app_shell": {
+      "type": "sidebar_with_topbar",
+      "sidebar_width": "w-64",
+      "sidebar_bg": "bg-slate-900 text-slate-100",
+      "topbar_height": "h-16",
+      "topbar_bg": "bg-white/90 backdrop-blur-md border-b border-slate-200",
+      "main_bg": "bg-slate-50 min-h-[calc(100vh-4rem)] p-4 sm:p-6 lg:p-8"
+    },
+    "dashboard_grid": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6",
+    "details_split": "grid grid-cols-1 lg:grid-cols-12 gap-6",
+    "details_main": "lg:col-span-8 space-y-6",
+    "details_aside": "lg:col-span-4 space-y-6"
+  },
+  "component_design_patterns": {
+    "cards": {
+      "base": "bg-white rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow duration-200 p-5 sm:p-6",
+      "kpi_widget": "bg-white rounded-xl border border-slate-200 p-5 flex items-center justify-between",
+      "urgent_card": "bg-rose-50/70 border border-rose-200 rounded-xl p-5"
+    },
+    "smart_cancellation_manager": {
+      "candidate_card": "bg-white rounded-xl border border-slate-200 p-5 hover:border-sky-300 transition-all",
+      "match_score_ring": "Radial progress or prominent score badge displaying weighted match: 40% Skills, 30% Availability, 20% Distance, 10% Interests",
+      "action_group": "Invite Volunteer button with instant confirmation, status pill (Invited / Accepted / Declined / Available)"
+    },
+    "shift_table": {
+      "container": "rounded-xl border border-slate-200 overflow-hidden bg-white shadow-sm",
+      "row_hover": "hover:bg-slate-50/80 transition-colors"
+    },
+    "map_view": {
+      "wrapper": "rounded-xl overflow-hidden border border-slate-200 h-[420px] shadow-sm relative z-0",
+      "provider": "Leaflet with OpenStreetMap tiles, custom marker icons for emergency vs regular shifts"
+    },
+    "language_selector": {
+      "placement": "topbar right",
+      "options": ["English", "ಕನ್ನಡ (Kannada)", "हिन्दी (Hindi)", "தமிழ் (Tamil)", "తెలుగు (Telugu)"]
+    }
+  },
+  "image_urls": {
+    "hero_banner": {
+      "url": "https://images.unsplash.com/photo-1542323228-002ac256e7b8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAxODF8MHwxfHNlYXJjaHwxfHx2b2x1bnRlZXJzJTIwZ3JvdXAlMjBjb21tdW5pdHklMjBoZWxwJTIwY2hhcml0eXxlbnwwfHx8fDE3OTM2ODM5OTl8MA&ixlib=rb-4.1.0&q=85",
+      "description": "Diverse community volunteers hands joined in center representing unity and nonprofit collaboration",
+      "usage": "Landing page hero & About page mission section"
+    },
+    "community_action": {
+      "url": "https://images.unsplash.com/photo-1551855350-c86caeaf8707?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2OTV8MHwxfHNlYXJjaHw0fHxjb21tdW5pdHklMjB2b2x1bnRlZXJzJTIwcGxhbnRpbmclMjB0cmVlcyUyMGZvb2QlMjBkcml2ZXxlbnwwfHx8fDE3OTM2ODQwMDB8MA&ixlib=rb-4.1.0&q=85",
+      "description": "Volunteer planting saplings during community green drive",
+      "usage": "Environmental & food drive event thumbnails"
+    },
+    "volunteer_teamwork": {
+      "url": "https://images.unsplash.com/photo-1758599669406-d5179ccefcb9?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAxODF8MHwxfHNlYXJjaHwzfHx2b2x1bnRlZXJzJTIwZ3JvdXAlMjBjb21tdW5pdHklMjBoZWxwJTIwY2hhcml0eXxlbnwwfHx8fDE3OTM2ODM5OTl8MA&ixlib=rb-4.1.0&q=85",
+      "description": "Group of enthusiastic youth volunteers engaged in clean city drive",
+      "usage": "Role selection & volunteer discovery cards"
+    }
+  },
+  "motion": {
+    "fade_in": "animate-in fade-in duration-300",
+    "slide_up": "animate-in slide-in-from-bottom-2 duration-200",
+    "card_hover": "transition-all duration-200 hover:-translate-y-0.5"
+  },
+  "accessibility": {
+    "wcag_compliance": "WCAG AA (4.5:1 for all normal text, 3:1 for large display)",
+    "focus_states": "focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2",
+    "data_testids": "MANDATORY on all action buttons, inputs, tabs, status badges, and filter controls"
+  },
+  "instructions_to_main_agent": [
+    "Install leaflet and @types/leaflet (`cd /app/frontend && yarn add leaflet @types/leaflet react-leaflet @types/react-leaflet i18next react-i18next`).",
+    "Ensure both NGO and Volunteer dashboards share the exact same clean, professional slate sidebar layout and top navigation for seamless dual-persona switching.",
+    "Implement the Smart Cancellation Manager candidate algorithm: display breakdown pills (Skills 40%, Availability 30%, Distance 20%, Interests 10%) with 1-click invitation triggers.",
+    "Provide interactive language switcher in header supporting all 5 requested languages with i18n translation keys for core UI terms.",
+    "Include high-contrast coverage status badges on event cards: Fully Staffed (Green), Partially Staffed (Amber), Critical Shortage (Red), Fully Booked (Indigo).",
+    "Render Recharts analytics on both NGO (Attendance rate, coverage trends, volunteer retention) and Volunteer dashboards (hours contributed, badges earned, impact metrics).",
+    "Make sure every interactive button and link includes explicit data-testid attributes like `data-testid='invite-candidate-btn'`, `data-testid='shift-register-btn'`, `data-testid='role-ngo-btn'`."
+  ]
+}

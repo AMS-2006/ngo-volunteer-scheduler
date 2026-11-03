@@ -1,0 +1,123 @@
+{
+  "iteration": 1,
+  "summary": "All 8 acceptance-matrix criteria exercised: 16 backend pytest cases (7 files) + 8 named browser checks, all passing. One browser check (auth-role-redirects-and-protected-routes) also re-run against the public preview ingress URL to confirm routing works end-to-end.",
+  "passed": 16,
+  "failed": 0,
+  "bugs": [],
+  "action_items": [],
+  "retest_needed": false,
+  "checks": [
+    {
+      "criterion": "Role-based auth & protected routes",
+      "name": "test_tscheck_auth_roles.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "POST /api/auth/login annapurna->ngo (200), priya->volunteer (200); GET /api/ngo/dashboard as priya->403; anon GET /api/ngo/dashboard->401/403; POST /api/auth/register ngo+volunteer->200; POST /api/auth/register ngo without causes/description->400"
+    },
+    {
+      "criterion": "Role-based auth & protected routes",
+      "name": "auth-role-redirects-and-protected-routes",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Login annapurna -> /ngo/dashboard; logout+login priya -> /volunteer/dashboard; direct nav to /ngo/dashboard as volunteer redirected to /volunteer/dashboard; GET /api/ngo/dashboard as volunteer = 403; signed-out nav to /ngo/dashboard -> /login. Also re-ran against public preview URL successfully."
+    },
+    {
+      "criterion": "Role-based auth & protected routes",
+      "name": "register-ngo-and-volunteer-lands-on-profile",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Filled /register/ngo (name/email/phone/location/description/cause chip) -> redirected to /ngo/profile; /register/volunteer -> redirected to /volunteer/profile"
+    },
+    {
+      "criterion": "NGO event + multi-shift management & publishing",
+      "name": "test_tscheck_event_shift_publish.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "POST /ngo/events -> draft; POST .../status publish with 0 shifts -> 4xx; 3x POST .../shifts (caps 5/3/8, distinct skills) -> 200; POST shift end<start -> 4xx; POST .../status publish -> 200 published; PUT /ngo/shifts/{id} edit -> 200; DELETE shift & event -> 200; draft event absent from GET /events?q=... for volunteer session"
+    },
+    {
+      "criterion": "NGO event + multi-shift management & publishing",
+      "name": "ngo-event-shift-management-and-publish",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Created event via form -> draft; clicked Publish with 0 shifts -> blocked (toast/400 in console, event-publish-button still shown); added 3 shifts via Add-shift dialog with different capacity/skill; invalid end<=start shift rejected (dialog stays open); Publish succeeded -> event-unpublish-button visible"
+    },
+    {
+      "criterion": "Volunteer discovery & registration rules",
+      "name": "test_tscheck_discovery_registration.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "Fresh event/shift(cap1) published -> visible on GET /events?q=; POST /volunteer/registrations -> confirmed, filled=1 on GET /events/{id}; duplicate POST -> 409; second volunteer on full shift -> 409; priya POST registration on overlapping Senior Citizens Health Check-up 09:00-12:00 shift -> 409 'schedule conflict'"
+    },
+    {
+      "criterion": "Volunteer discovery & registration rules",
+      "name": "volunteer-discovery-filters-and-registration-rules",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Discover map-view renders; search/category/location/date filters narrow to fixture event; full shift shows disabled 'Full' button; registering on open shift shows registered badge; duplicate POST (API cross-check) -> 409; clicking register on seeded conflicting Senior Citizens shift shows 'Schedule conflict' toast"
+    },
+    {
+      "criterion": "Smart Cancellation Manager ranking",
+      "name": "test_tscheck_cancellation_ranking.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /ngo/cancellations shows vacancy cancelled_volunteer_name='Rohan Gowda' on 11:00 shift; GET /ngo/shifts/{id}/candidates returns Kavya Reddy #1 (score 98.8, max), Arjun Nair, Divya Hegde present, scores strictly descending; Aditya Menon and Sanjay never listed; excluded breakdown non-empty"
+    },
+    {
+      "criterion": "Smart Cancellation Manager ranking",
+      "name": "smart-cancellation-manager-ranking",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "/ngo/cancellations vacancy row shows 'Rohan Gowda'; Find replacements opens candidates-panel; candidate-name order Kavya Reddy (score>=95) > Arjun Nair > Divya Hegde ('distance unavailable' shown); scores descending; excluded-summary visible; Aditya Menon / Sanjay not rendered"
+    },
+    {
+      "criterion": "Invitation -> accept -> assignment, race-safe",
+      "name": "test_tscheck_invitation_accept.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "POST /ngo/invitations invited=2; volunteer accept via /respond {accept:true} -> registration source=replacement, status=confirmed; second invitee's invitation_status becomes 'filled' and their /respond accept -> 4xx; decline flow -> invitation_status='declined'"
+    },
+    {
+      "criterion": "Invitation -> accept -> assignment, race-safe",
+      "name": "invitation-accept-race-safe-assignment",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "volB sees invitation card on /volunteer/invitations and accepts via UI -> confirmation text visible; volC (API) invite status='filled', accept attempt ->4xx; NGO /api/ngo/cancellations shows replaced_by_name set; /api/notifications contains replacement_accepted entry"
+    },
+    {
+      "criterion": "Volunteer cancel triggers engine",
+      "name": "test_tscheck_volunteer_cancel_engine.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "POST /volunteer/registrations/{id}/cancel -> status=cancelled; vacancy appears in GET /ngo/cancellations; POST /ngo/emergency on a critical shift -> invited>=1 with message"
+    },
+    {
+      "criterion": "Volunteer cancel triggers engine",
+      "name": "volunteer-cancel-triggers-engine-and-emergency",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Volunteer cancelled confirmed registration on /volunteer/registrations UI -> Cancelled shown; NGO notification volunteer_cancelled with 'eligible replacement' message present; vacancy row visible in /ngo/cancellations; emergency-send button clicked -> toast 'urgent request...' shown"
+    },
+    {
+      "criterion": "Coverage, attendance, analytics, notifications",
+      "name": "test_tscheck_coverage_attendance_analytics.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /ngo/coverage shows status=critical_shortage for empty shift; POST /ngo/registrations/{id}/attendance present hours=3 -> 200; volunteer GET /volunteer/analytics & /volunteer/dashboard total_hours>=3; GET /ngo/analytics ->200; priya GET/POST /notifications mark read & read-all -> all read_status true"
+    },
+    {
+      "criterion": "Coverage, attendance, analytics, notifications",
+      "name": "coverage-attendance-analytics-notifications",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "/ngo/coverage lists fixture event; attendance-present button marks hours (Xh shown); /ngo/analytics an-attendance stat visible; volunteer /volunteer/history shows event; dashboard total_hours>0; priya has reminder_24h/2h notification; mark-all-read clears notification-read-* controls"
+    },
+    {
+      "criterion": "Multilingual",
+      "name": "multilingual-language-switch-and-persistence",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "language-selector switch to 'hi' changes nav text and persists after reload and after logout/re-login (server-side profile language); 'Community Food Distribution Drive' renders as Hindi title on Discover search; switching to 'kn' changes nav text again"
+    }
+  ]
+}
