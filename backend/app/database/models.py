@@ -21,8 +21,9 @@ from app.models.volunteer import VolunteerProfile     # noqa: F401
 from app.models.event import Event                    # noqa: F401
 from app.models.shift import Shift                    # noqa: F401
 
-# ── Module 3 – Registrations (Scheduling Engine) ──────────────────────────────
+# ── Module 3 – Registrations & Availability (Scheduling Engine) ──────────────
 from app.models.registration import Registration      # noqa: F401
+from app.models.availability import VolunteerAvailability  # noqa: F401
 
 # ── Future modules – uncomment as you implement them ──────────────────────────
 # from app.models.notification import Notification    # noqa: F401  Module 6
@@ -35,4 +36,5 @@ __all__ = [
     "Event",
     "Shift",
     "Registration",
+    "VolunteerAvailability",
 ]

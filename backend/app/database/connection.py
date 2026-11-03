@@ -15,13 +15,18 @@ from app.core.config import get_settings
 settings = get_settings()
 
 # ── Engine ────────────────────────────────────────────────────────────────────
-engine = create_engine(
-    settings.database_url,
-    pool_pre_ping=True,    # Detect & recycle stale connections automatically
-    pool_size=10,
-    max_overflow=20,
-    echo=settings.debug,   # Print generated SQL in dev mode
-)
+engine_args = {
+    "echo": settings.debug,
+}
+
+if settings.database_url.startswith("sqlite"):
+    engine_args["connect_args"] = {"check_same_thread": False}
+else:
+    engine_args["pool_pre_ping"] = True
+    engine_args["pool_size"] = 10
+    engine_args["max_overflow"] = 20
+
+engine = create_engine(settings.database_url, **engine_args)
 
 # ── Session Factory ───────────────────────────────────────────────────────────
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

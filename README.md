@@ -100,11 +100,16 @@ python seed_volunteers.py
 uvicorn app.main:app --reload --port 8000
 ```
 
+### 9. Run the Test Suite
+```bash
+pytest backend/app/tests/ -v
+```
+
 Visit **http://localhost:8000/docs** for the interactive Swagger UI.
 
 ---
 
-## API Endpoints — Module 2: Volunteer Management
+## API Endpoints
 
 ### Authentication
 | Method | Endpoint | Description | Auth |
@@ -113,7 +118,25 @@ Visit **http://localhost:8000/docs** for the interactive Swagger UI.
 | `POST` | `/api/v1/auth/login` | Log in, receive JWT | Public |
 | `GET` | `/api/v1/auth/me` | Get current user | Bearer |
 
-### Volunteer Profile
+### NGO & Event Management (Module 1)
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| `POST` | `/api/v1/ngo/` | Create NGO profile | Admin |
+| `GET` | `/api/v1/ngo/` | Get my NGO profile | Admin |
+| `PATCH` | `/api/v1/ngo/` | Update NGO profile | Admin |
+| `POST` | `/api/v1/events/` | Create new event (starts as draft) | Admin |
+| `GET` | `/api/v1/events/` | List published events | Public |
+| `GET` | `/api/v1/events/admin` | List all events for admin's NGO | Admin |
+| `GET` | `/api/v1/events/{id}` | Get event details with shifts | Public |
+| `PATCH` | `/api/v1/events/{id}` | Update event | Admin |
+| `DELETE` | `/api/v1/events/{id}` | Delete event and its shifts | Admin |
+| `POST` | `/api/v1/events/{id}/publish` | Publish event | Admin |
+| `POST` | `/api/v1/events/{id}/shifts/` | Add shift to event | Admin |
+| `GET` | `/api/v1/events/{id}/shifts/` | List all shifts for an event | Public |
+| `PATCH` | `/api/v1/events/{id}/shifts/{shift_id}` | Update shift | Admin |
+| `DELETE` | `/api/v1/events/{id}/shifts/{shift_id}` | Delete shift | Admin |
+
+### Volunteer Management (Module 2)
 | Method | Endpoint | Description | Auth |
 |---|---|---|---|
 | `POST` | `/api/v1/volunteers/profile` | Create my profile | Volunteer |
@@ -124,6 +147,18 @@ Visit **http://localhost:8000/docs** for the interactive Swagger UI.
 | `GET` | `/api/v1/volunteers/{user_id}` | Get any volunteer's profile | Admin |
 | `GET` | `/api/v1/volunteers/{user_id}/summary` | Lightweight summary card | Admin |
 
+### Smart Shift Scheduling Engine (Module 3)
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| `GET` | `/api/v1/registrations/shifts/available` | Browse shifts with live capacity, remaining slots & personal conflict checks | Volunteer / Admin |
+| `POST` | `/api/v1/registrations/` | Register for a shift (or join FIFO waitlist if full) | Volunteer |
+| `DELETE` | `/api/v1/registrations/{id}` | Cancel registration (triggers automatic FIFO waitlist promotion) | Volunteer / Admin |
+| `GET` | `/api/v1/registrations/my` | View my registered shifts (confirmed & waitlisted) | Volunteer |
+| `GET` | `/api/v1/registrations/shift/{id}` | View all registrations for a shift | Admin |
+| `GET` | `/api/v1/registrations/availability` | View declared weekly/date availability windows | Volunteer |
+| `POST` | `/api/v1/registrations/availability` | Add an availability window (day of week, time range) | Volunteer |
+| `DELETE` | `/api/v1/registrations/availability/{id}` | Delete an availability window | Volunteer |
+
 ### Demo Credentials (after seeding)
 | Role | Email | Password |
 |---|---|---|
@@ -133,28 +168,13 @@ Visit **http://localhost:8000/docs** for the interactive Swagger UI.
 
 ---
 
-## Volunteer Profile Fields
-
-| # | Category | Fields |
-|---|---|---|
-| 1 | Personal | name, phone, address, city, state, pincode, age, date_of_birth, gender |
-| 2 | Occupation | occupation_type, organization_name, affiliation |
-| 3 | Interests | interests (array) |
-| 4 | Frequency | volunteering_frequency_per_month |
-| 5 | Hours | volunteering_hours_per_week |
-| 6 | Travel | max_travel_distance_km |
-| 7 | Skills | skills (array) |
-| + | Extras | availability, experience_months, bio, profile_picture_url |
-
----
-
 ## Modules Roadmap
 
 | Module | Status | Owner |
 |---|---|---|
-| Module 1 – Admin & Event Management | 🔜 Next | Member 1 |
+| **Module 1 – Admin & Event Management** | ✅ Complete | Member 1 |
 | **Module 2 – Volunteer Management** | ✅ Complete | Member 1 |
-| Module 3 – Scheduling Engine | 🔜 Next | Member 2 |
+| **Module 3 – Scheduling Engine** | ✅ Complete | Member 2 |
 | Module 4 – Smart Matching | 🔜 Next | Member 2 |
 | Module 5 – Coverage Dashboard | 🔜 Next | Member 3 |
 | Module 6 – Reminders | 🔜 Next | Member 3 |

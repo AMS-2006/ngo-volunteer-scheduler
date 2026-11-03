@@ -72,9 +72,14 @@ app.include_router(reminders.router,     prefix=PREFIX)
 def on_startup():
     """
     Create all database tables that don't exist yet.
-    DEV convenience only – production should use: alembic upgrade head
+    For local development with SQLite, creates tables automatically.
+    For PostgreSQL, schema changes are managed via Alembic migrations.
     """
-    Base.metadata.create_all(bind=engine)
+    if not settings.database_url.startswith("postgresql"):
+        try:
+            Base.metadata.create_all(bind=engine)
+        except Exception:
+            pass
 
 
 # ── Health Check ──────────────────────────────────────────────────────────────

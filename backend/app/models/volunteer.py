@@ -25,6 +25,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    JSON,
     String,
     Text,
 )
@@ -109,7 +110,7 @@ class VolunteerProfile(Base):
     #                    Disaster Relief, Women Empowerment, Senior Care, etc.
     # ────────────────────────────────────────────────────────────────────────
     interests: Mapped[list[str]] = mapped_column(
-        ARRAY(String(100)),
+        ARRAY(String(100)).with_variant(JSON, "sqlite"),
         nullable=False,
         default=list,
         server_default="{}",
@@ -163,7 +164,7 @@ class VolunteerProfile(Base):
     #                    Web Development, Data Entry, Cooking, etc.
     # ────────────────────────────────────────────────────────────────────────
     skills: Mapped[list[str]] = mapped_column(
-        ARRAY(String(100)),
+        ARRAY(String(100)).with_variant(JSON, "sqlite"),
         nullable=False,
         default=list,
         server_default="{}",
@@ -176,7 +177,7 @@ class VolunteerProfile(Base):
     #    The scheduling engine will use this for conflict-free recommendations.
     # ────────────────────────────────────────────────────────────────────────
     availability: Mapped[list[str]] = mapped_column(
-        ARRAY(String(50)),
+        ARRAY(String(50)).with_variant(JSON, "sqlite"),
         nullable=False,
         default=list,
         server_default="{}",
